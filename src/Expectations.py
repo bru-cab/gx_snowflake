@@ -18,27 +18,39 @@ def createExpectationSuite(context,suitename):
     expectation_suite_name=suitename, overwrite_existing=True)
     
     
-def createExpectations(context,suitename,local_batch_request,pandasdataframe, table):
+def createExpectations(session, context, suitename, local_batch_request, pandasdataframe, table):
+    from snowflake.snowpark.functions import col
     
-    # Creating the validator which takes the batch request and expectation suite name
+    # Creating the validator
     validator = context.get_validator(
         batch_request=local_batch_request, expectation_suite_name=suitename
     )
-    
-    if table == "CONTACTS":
-        # Expectations for table1
-        validator.expect_column_mean_to_be_between("AGE", 20, 25)
-        # Add more expectations specific to table1 as needed
 
-    elif table == "TRIPS":
-        # Expectations for table2
-        validator.expect_column_mean_to_be_between("TRIPDURATION", 5, 500)
-        # Add more expectations specific to table2 as needed
-    
+    # Retrieve the expectations from the table
+    df_sql = session.table("CITIBIKE_2.VALIDATION.EXPECTATIONS").filter(col("TABLE_NAME") == table.upper())
+    data = df_sql.collect()
+    expectations_df = pd.DataFrame(data)
+
+    if not expectations_df.empty:
+        for _, row in expectations_df.iterrows():
+            column_name = row['COLUMN_NAME']
+            expectation_type = row['EXPECTATION']
+            parameters = json.loads(row['PARAMETERS'])
+
+            # Apply expectations based on the type
+            if expectation_type == 'expect_column_mean_to_be_between':
+                min_value = parameters.get("min")
+                max_value = parameters.get("max")
+                validator.expect_column_mean_to_be_between(column_name, min_value, max_value)
+            elif expectation_type == 'expect_column_values_to_be_in_set':
+                expected_values = parameters.get("expectedValues", [])
+                validator.expect_column_values_to_be_in_set(column_name, expected_values)
+            # Add more expectation types as needed
+
     else:
-        # Error message if table name doesn't match any of the predefined tables
-        raise ValueError(f"The table '{table}' does not exist.")
+        raise ValueError(f"No expectations found for the table '{table}'.")
 
-    #Saving the expectation 
+    # Saving the expectation suite
     validator.save_expectation_suite(discard_failed_expectations=False)
+
 
