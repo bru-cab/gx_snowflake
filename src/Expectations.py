@@ -44,6 +44,9 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
                     max_value = parameters.get("max")
                     # Assuming your validation framework supports a method like this
                     validator.expect_table_row_count_to_be_between(min_value, max_value)
+                elif expectation_type == 'expect_table_column_count_to_equal':
+                    value = parameters.get("value")
+                    validator.expect_table_column_count_to_equal(value)
                 # Add more table-level expectation types as needed
             else:
                 # Apply column-level expectations
