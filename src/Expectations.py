@@ -37,15 +37,24 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
             expectation_type = row['EXPECTATION']
             parameters = json.loads(row['PARAMETERS'])
 
-            # Apply expectations based on the type
-            if expectation_type == 'expect_column_mean_to_be_between':
-                min_value = parameters.get("min")
-                max_value = parameters.get("max")
-                validator.expect_column_mean_to_be_between(column_name, min_value, max_value)
-            elif expectation_type == 'expect_column_values_to_be_in_set':
-                expected_values = parameters.get("expectedValues", [])
-                validator.expect_column_values_to_be_in_set(column_name, expected_values)
-            # Add more expectation types as needed
+            if column_name == "NONE":
+                # Handle table-level expectations
+                if expectation_type == 'expect_table_row_count_to_be_between':
+                    min_value = parameters.get("min")
+                    max_value = parameters.get("max")
+                    # Assuming your validation framework supports a method like this
+                    validator.expect_table_row_count_to_be_between(min_value, max_value)
+                # Add more table-level expectation types as needed
+            else:
+                # Apply column-level expectations
+                if expectation_type == 'expect_column_mean_to_be_between':
+                    min_value = parameters.get("min")
+                    max_value = parameters.get("max")
+                    validator.expect_column_mean_to_be_between(column_name, min_value, max_value)
+                elif expectation_type == 'expect_column_values_to_be_in_set':
+                    expected_values = parameters.get("expectedValues", [])
+                    validator.expect_column_values_to_be_in_set(column_name, expected_values)
+                # Add more column-level expectation types as needed
 
     else:
         raise ValueError(f"No expectations found for the table '{table}'.")
