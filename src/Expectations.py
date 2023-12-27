@@ -58,8 +58,11 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
                     max_value = parameters.get("max")
                     validator.expect_column_mean_to_be_between(column_name, min_value, max_value)
                 elif expectation_type == 'expect_column_values_to_be_in_set':
-                    expected_values = parameters.get("expectedValues", [])
-                    validator.expect_column_values_to_be_in_set(column_name, expected_values)
+                    expectedValues = parameters.get("expectedValues", [])
+                    validator.expect_column_values_to_be_in_set(column_name, expectedValues)
+                elif expectation_type == 'expect_column_values_to_not_be_null':
+                    value = parameters.get("value", [])
+                    validator.expect_column_values_to_not_be_null(value) 
                 # Add more column-level expectation types as needed
 
     else:
