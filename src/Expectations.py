@@ -47,6 +47,9 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
                 elif expectation_type == 'expect_table_column_count_to_equal':
                     value = parameters.get("value")
                     validator.expect_table_column_count_to_equal(value)
+                elif expectation_type == 'expect_table_columns_to_match_ordered_list':
+                    value_list = parameters.get("value_list", [])
+                    validator.expect_table_columns_to_match_ordered_list(value_list)
                 # Add more table-level expectation types as needed
             else:
                 # Apply column-level expectations
