@@ -10,7 +10,7 @@ def process_and_store_validation_results(session, source_table: str, destination
     data = df_sql.collect()
     df = pd.DataFrame(data) 
 
-    json_object = json.loads(df['RUNVALIDATION'].iloc[6])
+    json_object = json.loads(df['RUNVALIDATION'].iloc[-1])
 
     # Initialize a list to store the extracted information
     extracted_data = []
