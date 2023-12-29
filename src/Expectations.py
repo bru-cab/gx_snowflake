@@ -1,12 +1,10 @@
 import pandas as pd
-
 import sys
 import json
 import platform
 import os,requests
 from pathlib import Path
 import glob
-
 from configs.config import snowflake_conn_prop_local as snowflake_conn_prop
 from src.DataValidationContext import GEDataValidationContext
 from src.BatchRequest import getBatchRequest 
@@ -32,43 +30,48 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
     expectations_df = pd.DataFrame(data)
 
     if not expectations_df.empty:
-        for _, row in expectations_df.iterrows():
+        for index, row in expectations_df.iterrows():
             column_name = row['COLUMN_NAME']
-            expectation_type = row['EXPECTATION']
+            expectation_method_name = row['EXPECTATION']
             parameters = json.loads(row['PARAMETERS'])
 
-            if column_name == "NONE":
-                # Handle table-level expectations
-                if expectation_type == 'expect_table_row_count_to_be_between':
-                    min_value = parameters.get("min")
-                    max_value = parameters.get("max")
-                    # Assuming your validation framework supports a method like this
-                    validator.expect_table_row_count_to_be_between(min_value, max_value)
-                elif expectation_type == 'expect_table_column_count_to_equal':
-                    value = parameters.get("value")
-                    validator.expect_table_column_count_to_equal(value)
-                elif expectation_type == 'expect_table_columns_to_match_ordered_list':
-                    value_list = parameters.get("value_list", [])
-                    validator.expect_table_columns_to_match_ordered_list(value_list)
-                # Add more table-level expectation types as needed
-            else:
-                # Apply column-level expectations
-                if expectation_type == 'expect_column_mean_to_be_between':
-                    min_value = parameters.get("min")
-                    max_value = parameters.get("max")
-                    validator.expect_column_mean_to_be_between(column_name, min_value, max_value)
-                elif expectation_type == 'expect_column_values_to_be_in_set':
-                    expectedValues = parameters.get("expectedValues", [])
-                    validator.expect_column_values_to_be_in_set(column_name, expectedValues)
-                elif expectation_type == 'expect_column_values_to_not_be_null':
-                    value = parameters.get("value", [])
-                    validator.expect_column_values_to_not_be_null(value) 
-                # Add more column-level expectation types as needed
+            # Dynamically get the expectation method from the validator
+            expectation_method = getattr(validator, expectation_method_name, None)
 
+            if expectation_method:
+                try:
+                    expected_values = parameters.get('expectedValues', {})
+                    args = []
+
+                    # Add column_name to args if it's not "NONE"
+                    if column_name != "NONE":
+                        args.append(column_name)
+
+                    # Process the parameters based on their type
+                    if 'value' in expected_values:
+                        # Handle single or list values
+                        value = expected_values['value']
+                        if isinstance(value, list):
+                            args.extend(value)
+                        else:
+                            args.append(value)
+                    elif 'between' in expected_values:
+                        # Handle range values
+                        args.extend(expected_values['between'])
+                    elif 'list' in expected_values:
+                        # For expectations that require a list as a single argument, pass the whole list
+                        list_values = expected_values['list']
+                        if list_values:
+                            args.append(list_values)  # Append the entire list as a single argument
+
+                    # Call the expectation method with the arguments
+                    expectation_method(*args)
+                    print(f"Successfully processed {expectation_method_name} for column {column_name}")
+
+                except Exception as e:
+                    print(f"Failed to process {expectation_method_name} for column {column_name}: {e}")
     else:
-        raise ValueError(f"No expectations found for the table '{table}'.")
+        print(f"No expectations found for the table '{table}'.")
 
     # Saving the expectation suite
     validator.save_expectation_suite(discard_failed_expectations=False)
-
-
