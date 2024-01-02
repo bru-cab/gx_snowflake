@@ -16,7 +16,7 @@ def createExpectationSuite(context,suitename):
     expectation_suite_name=suitename, overwrite_existing=True)
     
     
-def createExpectations(session, context, suitename, local_batch_request, pandasdataframe, table):
+def createExpectations(session, context, suitename, local_batch_request, pandasdataframe, db_name,schema_name,table):
     from snowflake.snowpark.functions import col
     
     # Creating the validator
@@ -25,7 +25,8 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
     )
 
     # Retrieve the expectations from the table
-    df_sql = session.table("CITIBIKE_2.VALIDATION.EXPECTATIONS").filter(col("TABLE_NAME") == table.upper())
+    #df_sql = session.table("CITIBIKE_2.VALIDATION.EXPECTATIONS").filter(col("TABLE_NAME") == table.upper())
+    df_sql = session.table(f'{db_name}.VALIDATION.{schema_name}_EXPECTATIONS').filter(col("TABLE_NAME") == table.upper())
     data = df_sql.collect()
     expectations_df = pd.DataFrame(data)
 
