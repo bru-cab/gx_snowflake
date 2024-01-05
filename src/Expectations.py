@@ -14,8 +14,8 @@ from great_expectations.core.batch import BatchRequest, RuntimeBatchRequest
 def createExpectationSuite(context,suitename):
     context.create_expectation_suite(
     expectation_suite_name=suitename, overwrite_existing=True)
-    
-    
+        
+
 def createExpectations(session, context, suitename, local_batch_request, pandasdataframe, db_name,schema_name,table):
     from snowflake.snowpark.functions import col
     
@@ -47,7 +47,6 @@ def createExpectations(session, context, suitename, local_batch_request, pandasd
                     # Add column_name to args if it's not "NONE"
                     if column_name != "NONE":
                         args.append(column_name)
-
                     # Process the parameters based on their type
                     if 'value' in expected_values:
                         # Handle single or list values
