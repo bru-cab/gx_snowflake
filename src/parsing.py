@@ -2,6 +2,9 @@ import pandas as pd
 import json
 import snowflake.connector
 from configs.config import snowflake_conn_prop_local as snowflake_conn_prop
+from snowflake.snowpark.session import Session
+from configs.config import snowflake_conn_prop_local as snowflake_conn_prop
+from snowflake.snowpark.types import StringType, TimestampType, BooleanType, StructType, StructField
 
 
 def process_and_store_validation_results(session, source_table: str, destination_table: str):
@@ -53,6 +56,16 @@ def process_and_store_validation_results(session, source_table: str, destination
 
     df = pd.DataFrame(extracted_data)
 
+    # Define the schema for the DataFrame
+    schema = StructType([
+        StructField("EXPECTATION_TYPE", StringType()),
+        StructField("RUNTIME", TimestampType()),  # Define RUNTIME as TimestampType
+        StructField("EXPECTATION_CONFIG", StringType()),
+        StructField("OBSERVED_VALUE", StringType()),
+        StructField("SUCCESS_STATUS", BooleanType())
+])
+
+    # Process each row and create a list of dictionaries representing each row
     data_to_insert = []
 
     for index, row in df.iterrows():
@@ -72,7 +85,8 @@ def process_and_store_validation_results(session, source_table: str, destination
 
 
     # Create a DataFrame from the list of dictionaries
-    df_to_insert = session.create_dataframe(data_to_insert)
+    df_to_insert = session.create_dataframe(data_to_insert, schema=schema)
+
 
     # Write the DataFrame to the Snowflake table
     df_to_insert.write.mode("append").save_as_table(destination_table)
